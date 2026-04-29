@@ -1,9 +1,3 @@
-import { Firebot } from "@crowbartools/firebot-custom-scripts-types";
-
-interface Params {
-  message: string;
-}
-
 /*
 ====================================================
   PHASMOPHOBIA GHOST SOLVER (NORMAL JAVASCRIPT VERSION)
@@ -20,17 +14,7 @@ const evidence = [
   { "name": "box", "description": "Spirit Box" }
 ];
 
-interface Ghost {
-  name: string,
-  evidence: Array<string>,
-  traits: Array<string>,
-  abilities: Array<string>,
-  hunt: Array<string>,
-  tests: Array<string>,
-  notes: Array<string>
-}
-
-const ghosts: Array<Ghost> = [
+const ghosts = [
   {
     "name": "Spirit",
     "evidence": ["emf", "writing", "box"],
@@ -236,18 +220,18 @@ const ghosts: Array<Ghost> = [
   {
     "name": "Raiju",
     "evidence": ["emf", "orbs", "dots"],
-    "traits": ["Faster and more aggressive around electronics"],
-    "abilities": ["During events, device interference range is higher at 15m"],
-    "hunt": ["Threshold increases to 65% sanity around electronics",
+    "traits ": ["Faster and more aggressive around electronics"],
+    "abilities ": ["During events, device interference range is higher at 15m"],
+    "hunt ": ["Threshold increases to 65% sanity around electronics",
       "Hunts very fast (2.5m/s) within 15m of active electronics"
     ],
-    "tests": ["During a hunt, note the speed change around electronics"],
-    "notes": ["Electronics that are turned off will not affect its speed"]
+    "tests ": ["During a hunt, note the speed change around electronics"],
+    "notes ": ["Electronics that are turned off will not affect its speed"]
   },
   {
     "name": "Obake",
-    "evidence": ["emf", "uv", "orbs"],
-    "traits": ["Shapeshifts appearance and leaves behind unique UV evidence"],
+    "evidence ": ["emf", "uv", "orbs"],
+    "traits ": ["Shapeshifts appearance and leaves behind unique UV evidence"],
     "abilities": ["Has a 16% chance to leave a 6-Fingered UV hand print",
       "May have 2 fingerprints on light switches or 5 on cell doors"
     ],
@@ -257,8 +241,8 @@ const ghosts: Array<Ghost> = [
   },
   {
     "name": "The Mimic",
-    "evidence": ["uv", "freezing", "box"],
-    "traits": ["Will always leave ghost orbs as an extra piece of evidence"],
+    "evidence ": ["uv", "freezing", "box"],
+    "traits ": ["Will always leave ghost orbs as an extra piece of evidence"],
     "abilities": ["Can mimic any other ghosts' special abilities or traits",
       "This includes other ghosts' UV, Microphone, or interactions"
     ],
@@ -270,8 +254,8 @@ const ghosts: Array<Ghost> = [
   },
   {
     "name": "Moroi",
-    "evidence": ["writing", "freezing", "box"],
-    "traits": ["Curses players through spirit box or microphone responses"],
+    "evidence ": ["writing", "freezing", "box"],
+    "traits ": ["Curses players through spirit box or microphone responses"],
     "abilities": ["Receiving audio responses doubles sanity drain continuously"],
     "hunt": ["The Lower the average sanity, the faster the hunting speed"],
     "tests": ["Fast hunting speed slows down after restoring sanity"],
@@ -310,142 +294,46 @@ STATE
 ====================================================
 */
 
-interface EvidenceState {
-  evidence: Array<string>,
-  eliminated: Array<string>,
-  traits: Array<string>
-}
+const state = {
+  evidence: [],
+  eliminated: [],
+  traits: [],
+  history: []
+};
 
-function resetState(state: EvidenceState) {
+
+function resetState() {
   state.evidence = [];
   state.eliminated = [];
   state.traits = [];
-  return "Reset the state for a new game"
+  state.history = [];
 }
 
-function getEvidenceDescription(e: string) {
-  return evidence.find(ev => ev.name == e)?.description;
-}
-
-function getEvidenceKeyMap() {
-  return evidence.map(ev => ev.name + " -> " + ev.description).join(", ||| ");
-}
-
-function addEvidence(state: EvidenceState, e: string) {
-  if (state.evidence.length >= 3) {
-    return "Only 3 active evidence pieces at a time are valid"
-  }
-  
+function addEvidence(e) {
   let foundEvidence = evidence.find(ev => ev.name == e);
   let evidenceAlreadyFound = state.evidence.some(ev => ev == e)
 
   if (foundEvidence && !evidenceAlreadyFound) {
-    state.evidence.push(e)
-  } else {
-    return "No evidence matches: " + e + ". Valid evidence keys are: " + getEvidenceKeyMap();
+    state.evidence.append(e)
   }
 
-  return getEvidenceDescription(e) + " added to evidence list.  Current evidence: " + getEvidence(state);
+  return e + " added to evidence list.  Current evidence: " + getEvidence();
 }
 
-function getEvidence(state: EvidenceState) {
-  const foundEvidence = state.evidence.map(e => evidence.find(ev => ev.name == e));
-  return foundEvidence.length > 0 ? foundEvidence.map(ev => ev?.description).join(", ") : "No Evidence";
+function getEvidence() {
+  return state.evidence.join(", ");
 }
 
-function removeEvidence(state: EvidenceState, e: string) {
+function removeEvidence(e) {
   let evidenceAlreadyFound = state.evidence.some(ev => ev == e)
   if (evidenceAlreadyFound) {
     state.evidence = state.evidence.filter(ev => ev !== e)
-  } else {
-    return e + " not found in current evidence.  Current evidence: " + getEvidence(state);
   }
 
-  return e + " removed.  Current evidence: " + getEvidence(state);
+  return e + " removed.  Current evidence: " + getEvidence();
 }
 
-function filterGhostsByEvidence(state: EvidenceState) {
-  const matches = ghosts.filter(g => state.evidence.every(key => g.evidence.includes(key))).map(g => g.name).join(", ");
-  return matches.length > 0 ? matches : "No ghosts match this evidence";
+function filterGhostsByEvidence() {
+  return ghosts.filter(g => state.evidence.every(key => g.evidence.includes(key)));
 }
 
-const script: Firebot.CustomScript<Params> = {
-  getScriptManifest: () => {
-    return {
-      name: "Phasmophobia Ghost Helper",
-      description: "Tracks evidence and determines potential ghosts",
-      author: "Fen1xRising",
-      version: "1.0",
-      firebotVersion: "5",
-    };
-  },
-  getDefaultParameters: () => {
-    return {
-      message: {
-        type: "string",
-        default: "list",
-        description: "Function",
-        secondaryDescription: "add, list, remove, potential, reset",
-        title: "Phasmophobia Tool",
-      },
-    };
-  },
-  run: (runRequest) => {
-    let responseMessage: string = "";
-    const { logger, fs, path } = runRequest.modules;
-    const messageFunction = runRequest.parameters.message.split(" ")[0];
-    const messageParameter = runRequest.parameters.message.split(" ")[1]!;
-    let state: EvidenceState = { evidence: [], eliminated: [], traits: [] }
-    const dbPath = path.join(__dirname, 'phasmo_state.json');
-    if (fs.existsSync(dbPath)) {
-      try {
-        state = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-      } catch (err) {
-        logger.error("Failed to parse phasmo_state.json. Starting Fresh.")
-      }
-    }
-    responseMessage = getResponseMessage(state, messageFunction, responseMessage, messageParameter);
-    
-    try {
-      fs.writeFileSync(dbPath, JSON.stringify(state, null, 2));
-    } catch (err) {
-      logger.error("Failed to save to phasmo_state.json");
-    }
-
-    return {
-      success: true,
-      effects: [
-        {
-          type: "firebot:chat",
-          message: responseMessage,
-          chatter: "Streamer"
-        } as const
-      ]
-    };
-  },
-};
-
-export default script;
-
-function getResponseMessage(state: EvidenceState, messageFunction: string, responseMessage: string, messageParameter: string) {
-  switch (messageFunction) {
-    case "add":
-      responseMessage += messageParameter ? addEvidence(state, messageParameter) : "Invalid Argument";
-      break;
-    case "list":
-      responseMessage += getEvidence(state);
-      break;
-    case "remove":
-      responseMessage += messageParameter ? removeEvidence(state, messageParameter) : "Invalid Argument";
-      break;
-    case "potential":
-      responseMessage += filterGhostsByEvidence(state);
-      break;
-    case "reset":
-      responseMessage += resetState(state);
-      break;
-    default:
-      responseMessage += "Invalid request";
-  }
-  return responseMessage;
-}
