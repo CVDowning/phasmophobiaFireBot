@@ -355,13 +355,13 @@ function getEvidence(state: EvidenceState) {
 
 function removeEvidence(state: EvidenceState, e: string) {
   let evidenceAlreadyFound = state.evidence.some(ev => ev == e)
-  if (evidenceAlreadyFound) {
-    state.evidence = state.evidence.filter(ev => ev !== e)
-  } else {
-    return e + " not found in current evidence.  Current evidence: " + getEvidence(state);
+    if (evidenceAlreadyFound) {
+        state.evidence = state.evidence.filter(ev => ev !== e)
+    } else {
+        return getEvidenceDescription(e) + " not found in current evidence.  Current evidence: " + getEvidence(state);
   }
 
-  return e + " removed.  Current evidence: " + getEvidence(state);
+    return getEvidenceDescription(e) + " removed.  Current evidence: " + getEvidence(state);
 }
 
 function filterGhostsByEvidence(state: EvidenceState) {
